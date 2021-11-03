@@ -17,15 +17,16 @@
     <div class="content">
       <div v-if="!isUserOpened" class="legend">
         <div class="legend__data">
-          <div v-if="legend.length > 0" class="legend__items">
-            <Draggable v-model="legend">
+          <div v-if="localLegend.length > 0" class="legend__items">
+            <Draggable v-model="localLegend">
               <LegendItem
-                v-for="(item, index) in legend"
+                v-for="(item, index) in localLegend"
                 :key="index"
                 :color="item.color"
                 :text="item.text"
                 :counter="item.counter"
                 class="legend__item"
+                @changeColor="changeGroupColor({ oldColor: $event, idx: index })"
               />
             </Draggable>
           </div>
@@ -36,30 +37,41 @@
             {{ formattedDate }}
           </div>
 
-          <PieChart ref="chart" />
+          <PieChart :chart-data="legendChartData" :options="{ borderWidth: '10px', legend: { display: false } }" />
         </div>
       </div>
       <div v-else class="profile">
         <div v-if="!person" class="profile__empty">Место пустое</div>
 
-        <PersonCard :person="person" />
+        <PersonCard :person="person" @close="closeProfile" />
       </div>
     </div>
+
+    <group-color-picker
+      id="group-color-picker"
+      :group-id="editedGroupId"
+      :group-name="editedGroupName"
+      :color="editedColor"
+      @change="groupColorChanged"
+    ></group-color-picker>
   </div>
 </template>
 
 <script>
 import LegendItem from './SideMenu/LegendItem.vue'
 import PersonCard from './SideMenu/PersonCard.vue'
+import GroupColorPicker from './SideMenu/GroupColorPicker.vue'
+import PieChart from './SideMenu/PieChart.vue'
 
 import Draggable from 'vuedraggable'
-import { Doughnut as PieChart } from 'vue-chartjs'
 import { format } from 'date-fns'
-
-import legend from '@/assets/data/legend.json'
 
 export default {
   props: {
+    legend: {
+      type: Array,
+      required: true,
+    },
     isUserOpened: {
       type: Boolean,
       default: false,
@@ -74,27 +86,45 @@ export default {
     PersonCard,
     Draggable,
     PieChart,
+    GroupColorPicker,
   },
-  data() {
-    return {
-      legend: [],
-    }
-  },
-  created() {
-    this.loadLegend()
-  },
-  mounted() {
-    this.makeChart()
-  },
+  data: () => ({
+    editedGroupName: '',
+    editedColor: '#000000',
+    editedGroupId: 0,
+  }),
   methods: {
-    loadLegend() {
-      this.legend = legend
+    changeGroupColor(event) {
+      this.editedColor = event.oldColor
+      this.editedGroupName = this.legend[event.idx].text
+      this.editedGroupId = this.legend[event.idx].group_id
+      this.$bvModal.show('group-color-picker')
     },
+    groupColorChanged(event) {
+      const idx = this.legend.findIndex((group) => group.group_id === event.groupId)
+      if (~idx) {
+        this.localLegend[idx].color = event.color
+      }
+    },
+
     closeProfile() {
       this.$emit('update:isUserOpened', false)
     },
-    makeChart() {
-      const legendChartData = {
+  },
+  computed: {
+    localLegend: {
+      get() {
+        return this.legend
+      },
+      set(newValue) {
+        this.$emit('update:legend', newValue)
+      },
+    },
+    formattedDate() {
+      return format(new Date(), 'dd.MM.yyyy hh:mm')
+    },
+    legendChartData() {
+      return {
         labels: this.legend.map((it) => it.text),
         datasets: [
           {
@@ -104,20 +134,6 @@ export default {
           },
         ],
       }
-
-      const options = {
-        borderWidth: '10px',
-        legend: {
-          display: false,
-        },
-      }
-
-      this.$refs.chart.renderChart(legendChartData, options)
-    },
-  },
-  computed: {
-    formattedDate() {
-      return format(new Date(), 'dd.MM.yyyy hh:mm')
     },
   },
 }

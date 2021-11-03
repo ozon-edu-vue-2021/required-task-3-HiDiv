@@ -1,7 +1,7 @@
 <template>
   <div class="legend-item">
     <div class="legend-item__marker">
-      <div class="marker" :style="{ '--marker-color': color }" />
+      <div class="marker" :style="{ '--marker-color': color }" @click="onMarkerClick" />
     </div>
     <div class="legend-item__label">{{ text }}</div>
     <div class="legend-item__counter">{{ counter }}</div>
@@ -9,7 +9,10 @@
 </template>
 
 <script>
+const rgbToHex = (r, g, b) => '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)
+
 export default {
+  name: 'LegendItem',
   props: {
     color: {
       type: String,
@@ -22,6 +25,15 @@ export default {
     counter: {
       type: Number,
       default: 0,
+    },
+  },
+  methods: {
+    // Преобразуем фактический цвет маркера в hex-форму
+    onMarkerClick(nativeEvent) {
+      const colorAsRgbStr = getComputedStyle(nativeEvent.target).backgroundColor
+      const colorParts = colorAsRgbStr.match(/(\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})/)
+      const hexColor = colorParts ? rgbToHex(+colorParts[1], +colorParts[2], +colorParts[3]) : '#000000'
+      this.$emit('changeColor', hexColor)
     },
   },
 }

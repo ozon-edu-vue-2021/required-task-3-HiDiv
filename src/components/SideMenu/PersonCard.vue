@@ -16,6 +16,8 @@
 </template>
 
 <script>
+import { format } from 'date-fns'
+
 export default {
   props: {
     person: {
@@ -23,9 +25,24 @@ export default {
       default: null,
     },
   },
+  mounted() {
+    document.addEventListener('click', this.clickOutsideHandler)
+  },
+  beforeDestroy() {
+    document.removeEventListener('click', this.clickOutsideHandler)
+  },
+  methods: {
+    // Готовый плагин при данной архитектуре и верстке работает неправильно,
+    // напишем собственную реализацию
+    clickOutsideHandler(event) {
+      if (!this.$el.contains(event.target)) {
+        this.$emit('close')
+      }
+    },
+  },
   computed: {
-    formatedDate() {
-      return this.person.registered
+    formattedDate() {
+      return format(new Date(this.person.registered), 'dd.MM.yyyy hh:mm')
     },
   },
 }

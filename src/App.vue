@@ -1,8 +1,13 @@
 <template>
   <div id="app">
     <div class="office">
-      <Map />
-      <SideMenu />
+      <Map
+        :tables.sync="tables"
+        :legend.sync="legend"
+        :people.sync="people"
+        v-on:table-click="onTableClick"
+      />
+      <SideMenu :legend.sync="legend" :person="person" :is-user-opened.sync="isUserOpened" />
     </div>
   </div>
 </template>
@@ -11,11 +16,31 @@
 import Map from './components/Map.vue'
 import SideMenu from './components/SideMenu.vue'
 
+import tables from '@/assets/data/tables.json'
+import legend from '@/assets/data/legend.json'
+import people from '@/assets/data/people.json'
+
 export default {
   name: 'App',
   components: {
     Map,
     SideMenu,
+  },
+  data: () => ({
+    tables: tables,
+    legend: legend,
+    people: people,
+    isUserOpened: false,
+    person: {},
+  }),
+  methods: {
+    onTableClick(tableId) {
+      const idx = this.people.findIndex((item) => item.tableId === tableId)
+      if (~idx) {
+        this.person = this.people[idx]
+        this.isUserOpened = true
+      }
+    },
   },
 }
 </script>
